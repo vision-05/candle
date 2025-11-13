@@ -1,4 +1,4 @@
-# Candle, a worse version of Torch
+# Candle, my own take on Torch
 
 A place where I implement concepts I am learning in my Machine Learning modules, turning them into a fully fledged python library
 
