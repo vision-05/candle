@@ -1,5 +1,5 @@
 import numpy as np
-import activations
+import activations as activations
 
 class Cost:
     def __init__(self):

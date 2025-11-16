@@ -1,7 +1,7 @@
-import nn
-import activations as a
-import costs as c
-import optimisers as o
+import candle.nn as nn
+import candle.activations as a
+import candle.costs as c
+import candle.optimisers as o
 import sklearn.datasets
 import numpy as np
 

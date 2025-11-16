@@ -2,9 +2,9 @@
 # With optimisations
 
 import numpy as np
-import activations
-import costs
-import optimisers
+import activations as activations
+import costs as costs
+import optimisers as optimisers
 
 # to add: batch gradient calculation
 # OOM from keeping too many parameters

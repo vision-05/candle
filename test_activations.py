@@ -1,2 +1,2 @@
 import numpy as np
-import activations as a
+import candle.activations as a
