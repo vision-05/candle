@@ -22,7 +22,8 @@ class nn:
     
     def model(self, *args):
         """Create the model for the neural network to train
-           Adds activation functions and transforms to their respective lists IN ORDER"""
+           Adds activation functions and affine transforms to their respective lists IN ORDER.
+           Takes cost function and optimiser as special arguments."""
         for arg in args:
             if isinstance(arg, costs.Cost):
                 self.cost_fn = arg
@@ -34,6 +35,7 @@ class nn:
         self.dJdZ = lambda A, Y: A-Y #for 2 special cases not including linear regression
 
     def forward(self, X):
+        """Perform forward propogation through the network, statefully. Do not run during inference."""
         res = X
         for fn in self.fns:
             res = fn.forward(res)
@@ -41,17 +43,20 @@ class nn:
         return res
     
     def predict(self, X):
+        """Perform stateless forward propogation through the network for inference."""
         res = X
         for fn in self.fns:
             res = fn.predict(res)
         return res
 
     def backward(self, Y_pred, Y, lambd=0.0):
+        """Perform backward propogation through the network, statefully, do not run during inference, training, any other time."""
         dZ = self.dJdZ(Y_pred, Y)
         for fn in reversed(self.fns[:-1]): #first grad already calculated
             dZ = fn.backward(dZ,lambd=lambd)
 
     def accuracy(self, Y_pred, Y):
+        """Compute accuracy of predictions *Y_pred* against true labels *Y*."""
         predicted_labels = np.argmax(Y_pred, axis=0)
         true_labels = np.argmax(Y, axis=0)
         correct = (predicted_labels == true_labels)
@@ -59,6 +64,7 @@ class nn:
         return accuracy_val
 
     def train(self, X, Y, X_val, Y_val, no_epochs=100, learning_rate=0.001, batch_size=500, lambd=0.0):
+        """Train the neural network on data *X* with true labels *Y*, validating on *X_val* and *Y_val*. Takes number of epochs, learning rate, batch size and L2 regularization parameter *lambd* as input."""
         print("Training")
 
         m = X.shape[1]

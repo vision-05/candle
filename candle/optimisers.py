@@ -1,10 +1,14 @@
+"""Optimisers for training neural networks."""
+
 import numpy as np
 import activations as activations
 
+"""Abstract Optimiser class."""
 class Optimiser:
     def __init__(self):
         pass
 
+"""Exponential Weighted Moving Average base class for optimisers that use EWMA like Momentum, RMSProp and ADAM."""
 class EWMA(Optimiser):
     def __init__(self):
         super().__init__()
@@ -12,12 +16,13 @@ class EWMA(Optimiser):
     def _init_state(self, model_obj):
         pass
 
+"""Stochastic Gradient Descent optimiser."""
 class SGD(Optimiser):
     def __init__(self):
         super().__init__()
 
     def run(self, X, Y, batch_size, m, learning_rate, lambd, model_obj):
-        
+        """Run one epoch of SGD on data *X* with true labels *Y*, using given *batch_size*, *learning_rate*, L2 regularization parameter *lambd* and the neural network *model_obj*."""
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
@@ -43,13 +48,16 @@ class SGD(Optimiser):
 
         return epoch_cost/no_batches
 
+"""Momentum optimiser using Exponential Weighted Moving Average."""
 class Momentum(EWMA):
     def __init__(self, beta=0.9):
+        """Initialize Momentum optimiser with decay rate *beta*."""
         super().__init__()
         self.beta = beta
         self.V = None #store our momentum statefully
 
     def _init_state(self, model_obj):
+        """0 initialize velocity terms for each layer in the model."""
         self.V = {}
         for i, fn in enumerate(model_obj.fns):
             if isinstance(fn, activations.Linear):
@@ -57,6 +65,7 @@ class Momentum(EWMA):
                 self.V[f"dB{i}"] = np.zeros_like(fn.biases)
 
     def run(self, X, Y, batch_size, m, learning_rate, lambd, model_obj):
+        """Run one epoch of Momentum optimisation on data *X* with true labels *Y*, using given *batch_size*, *learning_rate*, L2 regularization parameter *lambd* and the neural network *model_obj*."""
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
@@ -86,15 +95,17 @@ class Momentum(EWMA):
         
         return epoch_cost/no_batches
 
-
+"""RMSProp optimiser using Exponential Weighted Moving Average."""
 class RMSProp(EWMA):
     def __init__(self, beta=0.9, epsilon=1e-8):
+        """Initialize RMSProp optimiser with decay rate *beta* and small constant *epsilon* to prevent division by zero."""
         super().__init__()
         self.beta = beta
         self.S = None
         self.epsilon = epsilon
 
     def _init_state(self, model_obj):
+        """0 initialize squared gradient terms for each layer in the model."""
         self.S = {}
         for i, fn in enumerate(model_obj.fns):
             if isinstance(fn, activations.Linear):
@@ -102,6 +113,7 @@ class RMSProp(EWMA):
                 self.S[f"dB{i}"] = np.zeros_like(fn.biases)
 
     def run(self, X, Y, batch_size, m, learning_rate, lambd, model_obj):
+        """Run one epoch of RMSProp optimisation on data *X* with true labels *Y*, using given *batch_size*, *learning_rate*, L2 regularization parameter *lambd* and the neural network *model_obj*."""
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
@@ -131,8 +143,10 @@ class RMSProp(EWMA):
         
         return epoch_cost/no_batches
 
+"""ADAM optimiser using Exponential Weighted Moving Average."""
 class ADAM(EWMA):
     def __init__(self, beta1=0.999, beta2=0.999, epsilon=1e-8):
+        """Initialize ADAM optimiser with decay rates *beta1* and *beta2*, and small constant *epsilon* to prevent division by zero."""
         super().__init__()
         self.beta1 = beta1
         self.beta2 = beta2
@@ -143,6 +157,7 @@ class ADAM(EWMA):
         self.M_hat = None
 
     def _init_state(self, model_obj):
+        """0 initialize first and second moment terms for each layer in the model."""
         self.S = {}
         self.S_hat = {}
         self.M = {}
@@ -162,6 +177,7 @@ class ADAM(EWMA):
 
 
     def run(self, X, Y, batch_size, m, learning_rate, lambd, model_obj):
+        """Run one epoch of ADAM optimisation on data *X* with true labels *Y*, using given *batch_size*, *learning_rate*, L2 regularization parameter *lambd* and the neural network *model_obj*."""
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
