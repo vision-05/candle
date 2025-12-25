@@ -1,7 +1,7 @@
 """Cost functions for neural networks including Cross-Entropy and Binary Cross-Entropy with L2 regularization support."""
 
 import numpy as np
-import activations as activations
+import candle.activations as activations
 
 """Abstract Cost class."""
 class Cost:
@@ -15,7 +15,7 @@ class CrossEntropy(Cost):
 
     def compute_cost(self, Y_pred, Y, layers, lambd=0.0):
         """Compute Cross-Entropy cost given predictions *Y_pred* and true labels *Y*. Supports L2 regularization via *lambd* and uses the list of network *layers* to compute the penalty."""
-        m = Y.shape[1]
+        m = Y.shape[0]
 
         L2_penalty = 0
         if lambd > 0:
@@ -39,7 +39,7 @@ class BinaryCrossEntropy(Cost):
 
     def compute_cost(self, y_pred, y, layers, lambd=0.0):
         """Compute Binary Cross-Entropy cost given predictions *y_pred* and true labels *y*. Supports L2 regularization via *lambd* and uses the list of network *layers* to compute the penalty."""
-        m = y.shape[1]
+        m = y.shape[0]
 
         L2_penalty = 0
         if lambd > 0:
@@ -52,4 +52,23 @@ class BinaryCrossEntropy(Cost):
         epsilon = 1e-15
         y_pred_stable = np.clip(y_pred, epsilon, 1 - epsilon)
         cost = -np.sum(np.log(y_pred_stable)*y + np.log(1-y_pred_stable)*(1-y))/m + L2_penalty
+        return np.squeeze(cost)
+
+class MSE(Cost):
+    def __init__(self):
+        super().__init__()
+
+    def compute_cost(self, y_pred, y, layers, lambd=0.0):
+        m = y.shape[0]
+        mse = np.sum((y-y_pred)**2)/m
+
+        L2_penalty = 0
+        if lambd > 0:
+            for fn in layers:
+                if isinstance(fn, activations.Linear):
+                    L2_penalty += np.sum(np.square(fn.weights))
+
+        L2_penalty = lambd*L2_penalty/(2*m)
+
+        cost = mse + L2_penalty
         return np.squeeze(cost)

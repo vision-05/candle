@@ -2,9 +2,9 @@
 # With optimisations
 
 import numpy as np
-import activations as activations
-import costs as costs
-import optimisers as optimisers
+import candle.activations as activations
+import candle.costs as costs
+import candle.optimisers as optimisers
 
 # to add: batch gradient calculation
 # OOM from keeping too many parameters
@@ -32,7 +32,15 @@ class nn:
             else:
                 self.fns.append(arg)
 
-        self.dJdZ = lambda A, Y: A-Y #for 2 special cases not including linear regression
+        if hasattr(self.fns[-1], 'weights'):
+            def linear_dZ(y_pred, y):
+                n_out = y.shape[1]
+
+                return 2 * (y_pred - y) / n_out
+            
+            self.dJdZ = linear_dZ
+        else:
+            self.dJdZ = lambda A, Y: A-Y #for 2 special cases not including linear regression
 
     def forward(self, X):
         """Perform forward propogation through the network, statefully. Do not run during inference."""
@@ -52,7 +60,12 @@ class nn:
     def backward(self, Y_pred, Y, lambd=0.0):
         """Perform backward propogation through the network, statefully, do not run during inference, training, any other time."""
         dZ = self.dJdZ(Y_pred, Y)
-        for fn in reversed(self.fns[:-1]): #first grad already calculated
+
+        backprop = self.fns[:-1]
+        if hasattr(self.fns[-1], 'weights'):
+            backprop = self.fns
+
+        for fn in reversed(backprop): #first grad already calculated
             dZ = fn.backward(dZ,lambd=lambd)
 
     def accuracy(self, Y_pred, Y):
@@ -63,7 +76,8 @@ class nn:
         accuracy_val = np.mean(correct)
         return accuracy_val
 
-    def train(self, X, Y, X_val, Y_val, no_epochs=100, learning_rate=0.001, batch_size=500, lambd=0.0):
+
+    def train(self, X, Y, X_val, Y_val, no_epochs=50, learning_rate=0.001, batch_size=500, lambd=0.0):
         """Train the neural network on data *X* with true labels *Y*, validating on *X_val* and *Y_val*. Takes number of epochs, learning rate, batch size and L2 regularization parameter *lambd* as input."""
         print("Training")
 

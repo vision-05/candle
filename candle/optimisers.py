@@ -1,7 +1,7 @@
 """Optimisers for training neural networks."""
 
 import numpy as np
-import activations as activations
+import candle.activations as activations
 
 """Abstract Optimiser class."""
 class Optimiser:
@@ -26,14 +26,13 @@ class SGD(Optimiser):
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
-        X_shuffled = X[:, permutation]
-        Y_shuffled = Y[:, permutation]
+        X_shuffled = X[permutation,:]
+        Y_shuffled = Y[permutation,:]
 
         no_batches = m//batch_size
-
         for j in range(no_batches):
-            batch_X = X_shuffled[:,batch_size*j:batch_size*(j+1)]
-            batch_Y = Y_shuffled[:,batch_size*j:batch_size*(j+1)]
+            batch_X = X_shuffled[batch_size*j:batch_size*(j+1),:]
+            batch_Y = Y_shuffled[batch_size*j:batch_size*(j+1),:]
             batch_Y_pred = model_obj.forward(batch_X)
 
             cost = model_obj.cost_fn.compute_cost(batch_Y_pred, batch_Y, model_obj.fns, lambd)
@@ -42,7 +41,7 @@ class SGD(Optimiser):
             model_obj.backward(batch_Y_pred, batch_Y)
 
             for fn in model_obj.fns:
-                if isinstance(fn, activations.Linear):
+                if hasattr(fn, 'weights'):
                     fn.weights -= learning_rate * fn.dW
                     fn.biases -= learning_rate * fn.dB
 
@@ -60,7 +59,7 @@ class Momentum(EWMA):
         """0 initialize velocity terms for each layer in the model."""
         self.V = {}
         for i, fn in enumerate(model_obj.fns):
-            if isinstance(fn, activations.Linear):
+            if hasattr(fn, 'weights'):
                 self.V[f"dW{i}"] = np.zeros_like(fn.weights)
                 self.V[f"dB{i}"] = np.zeros_like(fn.biases)
 
@@ -69,13 +68,13 @@ class Momentum(EWMA):
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
-        X_shuffled = X[:, permutation]
-        Y_shuffled = Y[:, permutation]
+        X_shuffled = X[permutation,:]
+        Y_shuffled = Y[permutation,:]
 
         no_batches = m//batch_size
         for j in range(no_batches):
-            batch_X = X_shuffled[:,batch_size*j:batch_size*(j+1)]
-            batch_Y = Y_shuffled[:,batch_size*j:batch_size*(j+1)]
+            batch_X = X_shuffled[batch_size*j:batch_size*(j+1),:]
+            batch_Y = Y_shuffled[batch_size*j:batch_size*(j+1),:]
             batch_Y_pred = model_obj.forward(batch_X)
 
             cost = model_obj.cost_fn.compute_cost(batch_Y_pred, batch_Y, model_obj.fns, lambd)
@@ -84,7 +83,7 @@ class Momentum(EWMA):
             model_obj.backward(batch_Y_pred, batch_Y)
 
             for i, fn in enumerate(model_obj.fns):
-                if isinstance(fn, activations.Linear):
+                if hasattr(fn, 'weights'):
                     dW = fn.dW
                     dB = fn.dB
 
@@ -108,7 +107,7 @@ class RMSProp(EWMA):
         """0 initialize squared gradient terms for each layer in the model."""
         self.S = {}
         for i, fn in enumerate(model_obj.fns):
-            if isinstance(fn, activations.Linear):
+            if hasattr(fn, 'weights'):
                 self.S[f"dW{i}"] = np.zeros_like(fn.weights)
                 self.S[f"dB{i}"] = np.zeros_like(fn.biases)
 
@@ -117,13 +116,13 @@ class RMSProp(EWMA):
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
-        X_shuffled = X[:, permutation]
-        Y_shuffled = Y[:, permutation]
+        X_shuffled = X[permutation,:]
+        Y_shuffled = Y[permutation,:]
 
         no_batches = m//batch_size
         for j in range(no_batches):
-            batch_X = X_shuffled[:,batch_size*j:batch_size*(j+1)]
-            batch_Y = Y_shuffled[:,batch_size*j:batch_size*(j+1)]
+            batch_X = X_shuffled[batch_size*j:batch_size*(j+1),:]
+            batch_Y = Y_shuffled[batch_size*j:batch_size*(j+1),:]
             batch_Y_pred = model_obj.forward(batch_X)
 
             cost = model_obj.cost_fn.compute_cost(batch_Y_pred, batch_Y, model_obj.fns, lambd)
@@ -132,7 +131,7 @@ class RMSProp(EWMA):
             model_obj.backward(batch_Y_pred, batch_Y)
 
             for i, fn in enumerate(model_obj.fns):
-                if isinstance(fn, activations.Linear):
+                if hasattr(fn, 'weights'):
                     dW = fn.dW
                     dB = fn.dB
 
@@ -164,7 +163,7 @@ class ADAM(EWMA):
         self.M_hat = {}
 
         for i, fn in enumerate(model_obj.fns):
-            if isinstance(fn, activations.Linear):
+            if isinstance(fn, activations.Dense):
                 self.S[f"dW{i}"] = np.zeros_like(fn.weights)
                 self.S[f"dB{i}"] = np.zeros_like(fn.biases)
                 self.S_hat[f"dW{i}"] = np.zeros_like(fn.weights)
@@ -181,13 +180,13 @@ class ADAM(EWMA):
         epoch_cost = 0
         permutation = np.random.permutation(m)
 
-        X_shuffled = X[:, permutation]
-        Y_shuffled = Y[:, permutation]
+        X_shuffled = X[permutation, :]
+        Y_shuffled = Y[permutation, :]
 
         no_batches = m//batch_size
         for j in range(no_batches):
-            batch_X = X_shuffled[:,batch_size*j:batch_size*(j+1)]
-            batch_Y = Y_shuffled[:,batch_size*j:batch_size*(j+1)]
+            batch_X = X_shuffled[batch_size*j:batch_size*(j+1),:]
+            batch_Y = Y_shuffled[batch_size*j:batch_size*(j+1),:]
             batch_Y_pred = model_obj.forward(batch_X)
 
             cost = model_obj.cost_fn.compute_cost(batch_Y_pred, batch_Y, model_obj.fns, lambd)
@@ -195,10 +194,10 @@ class ADAM(EWMA):
 
             model_obj.backward(batch_Y_pred, batch_Y)
 
-            t += 1
+            self.t += 1
 
             for i, fn in enumerate(model_obj.fns):
-                if isinstance(fn, activations.Linear):
+                if hasattr(fn, 'weights'):
                     dW = fn.dW
                     dB = fn.dB
 

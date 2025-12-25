@@ -13,14 +13,14 @@ class Activation:
     def backward(self, dA, Z, **kwargs):
         pass
 
-"""Linear activation (affine) layer with forward and backward propogation"""
-class Linear(Activation):
+"""Dense (Linear) activation (affine) layer with forward and backward propogation"""
+class Dense(Activation):
     def __init__(self, in_features, out_features, bias=True):
         """Initialize weights and biases with He initialization, taking *in_features* and *out_features* as input and output dimensions respectively."""
         super().__init__()
         self.bias_pred = True
-        self.weights = np.random.randn(out_features, in_features) * np.sqrt(2 / in_features)
-        self.biases = np.ones((out_features, 1)) * 0.01
+        self.weights = np.random.randn(in_features, out_features) * np.sqrt(2 / in_features)
+        self.biases = np.ones((1,out_features)) * 0.01
 
         self.A_prev = None
         self.dW = None
@@ -32,27 +32,64 @@ class Linear(Activation):
         if self.bias_pred == False:
             self.bias = 0
 
-        return np.dot(self.weights, inputs) + self.biases
+        return np.dot(inputs, self.weights) + self.biases
     
     def predict(self, inputs):
         """Stateless forward propogation for inference."""
         if self.bias_pred == False:
             self.bias = 0
 
-        return np.dot(self.weights, inputs) + self.biases
+        return np.dot(inputs, self.weights) + self.biases
     
     def backward(self, dZ, **kwargs):
         """Stateful backward propogation returning gradient of this layer's inputs. Gradients of weights and biases are stored in self.dW and self.dB respectively."""
+        m = self.A_prev.shape[0]
+
+        lambd = kwargs.get("lambd", 0.0)
+
+        L2_grad = lambd*self.weights/m
+
+        self.dW = np.dot(self.A_prev.T, dZ)/m + L2_grad
+        self.dB = np.sum(dZ, axis=0, keepdims=True)/m
+
+        new_grad = np.dot(dZ, self.weights.T)
+        return new_grad
+    
+class Conv1D(Activation):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1):
+        """1 Dimenional Convolutional layer"""
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.dilation = dilation
+
+        self.weights = np.random.randn(self.out_channels, self.in_channels, self.kernel_size) * np.sqrt(2 / self.in_channels+self.kernel_size)
+        
+        self.biases = np.zeros(out_channels)
+
+    def im2col(self, X):
+        pass
+
+    def forward(self, inputs):
+        weights_flattened = self.weights.reshape(self.out_channels, -1) #combine channels with kernels
+        inputs_padded = np.pad(inputs, self.padding, 'constant', constant_values=0) #pad inputs
+        return np.dot(weights_flattened, inputs_padded) + self.biases[:,np.newaxis]
+
+    def backward(self, dZ, **kwargs):
+        """Stateful backpropogation"""
         m = self.A_prev.shape[1]
 
         lambd = kwargs.get("lambd", 0.0)
 
         L2_grad = lambd*self.weights/m
 
-        self.dW = np.dot(dZ, self.A_prev.T)/m + L2_grad
-        self.dB = np.sum(dZ, axis=1, keepdims=True)/m
+        self.dW = np.zeros_like(self.weights)
+        self.dB = np.sum(dZ, axis=1, keepdims=True)
 
-        new_grad = np.dot(self.weights.T, dZ)
+        new_grad = np.dot(dZ, self.weights.T)
         return new_grad
 
 """ReLU activation function with forward and backward propogation."""

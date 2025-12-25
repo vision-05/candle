@@ -43,13 +43,13 @@ Y_test = one_hot_encoder(Y_test_raw, 10)
 
 mod = nn.nn()
 mod.model(
-    a.Linear(784,60),
+    a.Dense(784,60),
     a.LeakyReLU(),
-    a.Linear(60,40),
+    a.Dense(60,40),
     a.LeakyReLU(),
-    a.Linear(40,20),
+    a.Dense(40,20),
     a.LeakyReLU(),
-    a.Linear(20,10),
+    a.Dense(20,10),
     a.softmax(),
     c.CrossEntropy(),
     o.RMSProp(0.8)
